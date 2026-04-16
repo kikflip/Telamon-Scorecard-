@@ -113,7 +113,7 @@ hr.div{border:none;border-top:1px solid #eceef3;margin:20px 0;}
 <div class="wrapper" id="app"></div>
 
 <script>
-const FORMSPREE_URL = 'https://formspree.io/f/xgororer;
+const FORMSPREE_URL = 'https://formspree.io/f/YOUR_FORM_ID';
 
 function getParams() {
   try {
@@ -441,11 +441,23 @@ function renderCustomer(p) {
   });
 }
 
-const params = getParams();
-if (params) {
-  renderCustomer(params);
+function init() {
+  try {
+    const params = getParams();
+    if (params) {
+      renderCustomer(params);
+    } else {
+      renderSetup();
+    }
+  } catch(e) {
+    renderSetup();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
 } else {
-  renderSetup();
+  init();
 }
 </script>
 </body>
