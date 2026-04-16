@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telamon Project Scorecard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;padding:32px 16px 60px;font-size:14px;line-height:1.6;}
+.wrapper{max-width:700px;margin:0 auto;}
+
+.mode-banner{border-radius:10px;padding:13px 20px;margin-bottom:18px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;}
+.mode-banner.setup{background:#fef9c3;color:#713f12;border:1px solid #fde68a;}
+.mode-banner.customer{background:#e0f2fe;color:#0c4a6e;border:1px solid #bae6fd;}
+.mode-banner svg{flex-shrink:0;}
+
+.card{background:#fff;border-radius:14px;overflow:hidden;border:1px solid #dde1ea;}
+.card-header{background:#1a2e4a;padding:28px 36px 24px;}
+.card-header h1{color:#fff;font-size:21px;font-weight:700;margin:0 0 4px;letter-spacing:-0.3px;}
+.card-header p{color:rgba(255,255,255,0.45);font-size:13px;}
+.card-header .project-snapshot{margin-top:18px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.card-header .project-snapshot.hidden{display:none;}
+.snap-item label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.4);margin-bottom:3px;font-weight:700;}
+.snap-item span{font-size:14px;color:#fff;font-weight:600;}
+.snap-item span.empty{color:rgba(255,255,255,0.25);font-style:italic;font-weight:400;}
+
+.section{padding:24px 36px;border-bottom:1px solid #eceef3;}
+.section:last-of-type{border-bottom:none;}
+.section.tinted{background:#f7f9fc;}
+
+.section-label{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7c82a0;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.badge{background:#dbeafe;color:#1e40af;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:20px;}
+
+.field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px;}
+.field-grid.cols3{grid-template-columns:repeat(3,1fr);}
+.field-group{display:flex;flex-direction:column;gap:5px;}
+.field-group.full{grid-column:1/-1;}
+label.fl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#7c82a0;}
+
+input[type="text"],input[type="email"],input[type="date"],select,textarea{width:100%;padding:9px 12px;border:1px solid #dde1ea;border-radius:8px;font-size:14px;font-family:inherit;color:#1a1a2e;background:#fff;transition:border-color .15s;outline:none;appearance:none;-webkit-appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:#1a2e4a;box-shadow:0 0 0 3px rgba(26,46,74,.08);}
+input:read-only,textarea:read-only,input:disabled,textarea:disabled,select:disabled{background:#f5f6f8;color:#9ca3af;cursor:not-allowed;border-color:#e9ebef;}
+textarea{resize:vertical;min-height:72px;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237c82a0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+
+.star-row{display:flex;gap:5px;flex-wrap:wrap;}
+.star-row input[type="radio"]{display:none;}
+.star-row label.star{display:flex;align-items:center;justify-content:center;width:44px;height:36px;border:1px solid #dde1ea;border-radius:8px;font-size:13px;font-weight:700;color:#7c82a0;cursor:pointer;transition:all .12s;background:#fff;}
+.star-row input[type="radio"]:checked+label.star{background:#1a2e4a;border-color:#1a2e4a;color:#fff;}
+.star-row label.star:hover{border-color:#1a2e4a;color:#1a2e4a;}
+
+.trend-row{display:flex;gap:5px;}
+.trend-row input[type="radio"]{display:none;}
+.trend-row label.tr{display:flex;align-items:center;justify-content:center;width:44px;height:36px;border:1px solid #dde1ea;border-radius:8px;font-size:18px;cursor:pointer;transition:all .12s;background:#fff;}
+.trend-row input[type="radio"]:checked+label.tr{background:#1a2e4a;border-color:#1a2e4a;color:#fff!important;}
+.trend-row label.tr:hover{border-color:#1a2e4a;}
+
+.sub{margin-bottom:22px;}
+.sub:last-child{margin-bottom:0;}
+.sub-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #eceef3;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+.score-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+
+hr.div{border:none;border-top:1px solid #eceef3;margin:20px 0;}
+
+.exec-table{width:100%;border-collapse:collapse;}
+.exec-table thead tr{border-bottom:1px solid #eceef3;}
+.exec-table th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c82a0;padding:0 10px 10px 0;}
+.exec-table td{padding:10px 10px 10px 0;vertical-align:top;border-bottom:1px solid #f0f1f5;}
+.exec-table tr:last-child td{border-bottom:none;}
+.exec-table td:first-child{font-size:13px;font-weight:600;color:#1a1a2e;white-space:nowrap;padding-top:14px;}
+.exec-table input[type="text"]{padding:7px 10px;font-size:13px;}
+
+.quote-wrap{position:relative;}
+.quote-wrap::before{content:'\201C';position:absolute;top:8px;left:12px;font-size:30px;color:#dde1ea;font-family:Georgia,serif;line-height:1;}
+.quote-wrap textarea{padding-left:30px;}
+
+.submit-bar{background:#f7f9fc;border-top:1px solid #eceef3;padding:22px 36px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.submit-note{font-size:12px;color:#7c82a0;max-width:340px;}
+
+.btn-primary{background:#1a2e4a;color:#fff;border:none;border-radius:8px;padding:12px 26px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .1s;white-space:nowrap;}
+.btn-primary:hover{opacity:.85;}
+.btn-primary:active{transform:scale(.98);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-secondary{background:#fff;color:#1a2e4a;border:1.5px solid #1a2e4a;border-radius:8px;padding:12px 26px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s;}
+.btn-secondary:hover{background:#f0f2f5;}
+
+.success-msg{display:none;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;border-radius:10px;padding:18px 24px;margin:0 36px 16px;font-size:14px;font-weight:600;text-align:center;}
+
+.card-footer{background:#1a2e4a;padding:12px 36px;text-align:center;}
+.card-footer p{color:rgba(255,255,255,.3);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+
+.share-box{background:#f0f4fb;border:1px solid #c7d7f0;border-radius:10px;padding:18px 20px;margin-top:18px;}
+.share-box p{font-size:12px;color:#3b5279;margin-bottom:10px;font-weight:600;}
+.share-url-row{display:flex;gap:8px;}
+.share-url-row input{flex:1;font-size:12px;color:#1a2e4a;background:#fff;border:1px solid #c7d7f0;border-radius:6px;padding:8px 10px;font-family:monospace;}
+.share-url-row button{background:#1a2e4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+.intro-box{background:#f0f4fb;border-radius:10px;padding:18px 22px;margin-bottom:6px;}
+.intro-box p{font-size:14px;color:#1a1a2e;line-height:1.7;}
+.intro-box strong{font-weight:700;}
+
+@media(max-width:560px){
+  .section{padding:18px 20px;}
+  .card-header{padding:22px 20px;}
+  .submit-bar{padding:18px 20px;}
+  .two-col,.field-grid{grid-template-columns:1fr;}
+  .card-header .project-snapshot{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrapper" id="app"></div>
+
+<script>
+const FORMSPREE_URL = 'https://formspree.io/f/YOUR_FORM_ID';
+
+function getParams() {
+  try {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return null;
+    return JSON.parse(atob(hash));
+  } catch(e) { return null; }
+}
+
+function encodeParams(data) {
+  return btoa(JSON.stringify(data));
+}
+
+function scoreRadios(name, prefix) {
+  return [1,2,3,4,5].map(n =>
+    `<input type="radio" name="${name}" id="${prefix}${n}" value="${n}"><label class="star" for="${prefix}${n}">${n}</label>`
+  ).join('');
+}
+
+function trendRadios(name, prefix) {
+  return `
+    <input type="radio" name="${name}" id="${prefix}up" value="↑"><label class="tr" for="${prefix}up" style="color:#16a34a;">↑</label>
+    <input type="radio" name="${name}" id="${prefix}flat" value="→"><label class="tr" for="${prefix}flat" style="color:#6b7280;">→</label>
+    <input type="radio" name="${name}" id="${prefix}dn" value="↓"><label class="tr" for="${prefix}dn" style="color:#dc2626;">↓</label>`;
+}
+
+function renderSetup() {
+  document.getElementById('app').innerHTML = `
+  <div class="mode-banner setup">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#92400e" stroke-width="1.5"/><path d="M8 5v3.5L10 10" stroke="#92400e" stroke-width="1.5" stroke-linecap="round"/></svg>
+    Telamon setup mode — fill in project details, then generate a link to share with your customer.
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h1>Project Scorecard</h1>
+      <p>Set up project details before sharing with your customer</p>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Project overview</div>
+      <div class="field-grid">
+        <div class="field-group"><label class="fl" for="s_customer">Customer</label><input type="text" id="s_customer" placeholder="Company name"></div>
+        <div class="field-group"><label class="fl" for="s_project_name">Project name</label><input type="text" id="s_project_name" placeholder="Project name"></div>
+        <div class="field-group"><label class="fl" for="s_project_type">Project type</label>
+          <select id="s_project_type">
+            <option value="">Select type...</option>
+            <option>Supply Chain</option>
+            <option>Mobility Distribution</option>
+            <option>Wireless</option>
+            <option>Construction</option>
+            <option>Inside Plant / Datacenter</option>
+            <option>Deployment Ready Solutions</option>
+            <option>OSP</option>
+            <option>Fiber</option>
+            <option>ITAD</option>
+            <option>Managed Services</option>
+          </select>
+        </div>
+        <div class="field-group"><label class="fl" for="s_pm">Telamon PM</label><input type="text" id="s_pm" placeholder="Full name"></div>
+        <div class="field-group"><label class="fl" for="s_planned">Planned completion</label><input type="date" id="s_planned"></div>
+        <div class="field-group"><label class="fl" for="s_actual">Actual completion</label><input type="date" id="s_actual"></div>
+        <div class="field-group"><label class="fl" for="s_sponsor">Customer sponsor</label><input type="text" id="s_sponsor" placeholder="Name & title"></div>
+        <div class="field-group"><label class="fl" for="s_value">Project value</label><input type="text" id="s_value" placeholder="e.g. $1,250,000"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Budget details</div>
+      <div class="field-grid">
+        <div class="field-group"><label class="fl" for="s_budget_orig">Original contract value</label><input type="text" id="s_budget_orig" placeholder="$0.00"></div>
+        <div class="field-group"><label class="fl" for="s_budget_final">Final value</label><input type="text" id="s_budget_final" placeholder="$0.00"></div>
+        <div class="field-group"><label class="fl" for="s_budget_co">Change orders (% of total)</label><input type="text" id="s_budget_co" placeholder="e.g. 8%"></div>
+        <div class="field-group"><label class="fl" for="s_budget_margin">Margin impact notes</label><input type="text" id="s_budget_margin" placeholder="Internal notes"></div>
+      </div>
+    </div>
+
+    <div class="submit-bar">
+      <p class="submit-note">Once generated, copy the link and send it to your customer. Their responses will be emailed back to Telamon.</p>
+      <button class="btn-primary" onclick="generateLink()">Generate customer link →</button>
+    </div>
+
+    <div class="share-box" id="share-box" style="display:none;margin:0 36px 24px;">
+      <p>Share this link with your customer:</p>
+      <div class="share-url-row">
+        <input type="text" id="share-url" readonly>
+        <button onclick="copyLink()">Copy</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function generateLink() {
+  const data = {
+    customer: document.getElementById('s_customer').value,
+    project_name: document.getElementById('s_project_name').value,
+    project_type: document.getElementById('s_project_type').value,
+    pm: document.getElementById('s_pm').value,
+    planned: document.getElementById('s_planned').value,
+    actual: document.getElementById('s_actual').value,
+    sponsor: document.getElementById('s_sponsor').value,
+    value: document.getElementById('s_value').value,
+    budget_orig: document.getElementById('s_budget_orig').value,
+    budget_final: document.getElementById('s_budget_final').value,
+    budget_co: document.getElementById('s_budget_co').value,
+    budget_margin: document.getElementById('s_budget_margin').value,
+  };
+  const url = window.location.href.split('#')[0] + '#' + encodeParams(data);
+  document.getElementById('share-box').style.display = 'block';
+  document.getElementById('share-url').value = url;
+}
+
+function copyLink() {
+  const el = document.getElementById('share-url');
+  el.select();
+  document.execCommand('copy');
+  const btn = el.nextElementSibling;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 2000);
+}
+
+function fmt(val, fallback) {
+  return val && val.trim() ? val : `<span style="color:#bbb;font-style:italic;">${fallback || '—'}</span>`;
+}
+
+function renderCustomer(p) {
+  document.getElementById('app').innerHTML = `
+  <div class="mode-banner customer">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#075985" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="#075985" stroke-width="1.5" stroke-linecap="round"/></svg>
+    Please score your experience with this project. Your feedback goes directly to the Telamon team.
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h1>${p.project_name ? p.project_name + ' — Scorecard' : 'Project Scorecard'}</h1>
+      <p>Post-project performance review &nbsp;&middot;&nbsp; Telamon</p>
+      <div class="project-snapshot">
+        <div class="snap-item"><label>Customer</label><span>${fmt(p.customer)}</span></div>
+        <div class="snap-item"><label>Project type</label><span>${fmt(p.project_type)}</span></div>
+        <div class="snap-item"><label>Project value</label><span>${fmt(p.value)}</span></div>
+        <div class="snap-item"><label>Planned completion</label><span>${fmt(p.planned)}</span></div>
+        <div class="snap-item"><label>Actual completion</label><span>${fmt(p.actual)}</span></div>
+        <div class="snap-item"><label>Telamon PM</label><span>${fmt(p.pm)}</span></div>
+        ${p.sponsor ? `<div class="snap-item"><label>Your sponsor</label><span>${p.sponsor}</span></div>` : ''}
+      </div>
+    </div>
+
+    <form id="cx-form" action="${FORMSPREE_URL}" method="POST">
+
+      <input type="hidden" name="_project_name" value="${p.project_name||''}">
+      <input type="hidden" name="_customer" value="${p.customer||''}">
+      <input type="hidden" name="_project_type" value="${p.project_type||''}">
+      <input type="hidden" name="_project_value" value="${p.value||''}">
+      <input type="hidden" name="_planned_completion" value="${p.planned||''}">
+      <input type="hidden" name="_actual_completion" value="${p.actual||''}">
+      <input type="hidden" name="_telamon_pm" value="${p.pm||''}">
+      <input type="hidden" name="_customer_sponsor" value="${p.sponsor||''}">
+      <input type="hidden" name="_budget_original" value="${p.budget_orig||''}">
+      <input type="hidden" name="_budget_final" value="${p.budget_final||''}">
+      <input type="hidden" name="_budget_change_orders" value="${p.budget_co||''}">
+      <input type="hidden" name="_budget_margin" value="${p.budget_margin||''}">
+
+      <!-- Executive Overview -->
+      <div class="section">
+        <div class="section-label">Overall scores</div>
+        <div class="intro-box" style="margin-bottom:18px;">
+          <p>Rate each category from <strong>1 (poor)</strong> to <strong>5 (excellent)</strong> and indicate whether performance trended up, stayed steady, or declined across the project.</p>
+        </div>
+        <table class="exec-table">
+          <thead><tr>
+            <th style="width:160px;">Category</th>
+            <th style="width:200px;">Score (1–5)</th>
+            <th style="width:130px;">Trend</th>
+            <th>Notes</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Delivery</td>
+              <td><div class="star-row">${scoreRadios('exec_delivery_score','eds')}</div></td>
+              <td><div class="trend-row">${trendRadios('exec_delivery_trend','edt')}</div></td>
+              <td><input type="text" name="exec_delivery_notes" placeholder="Optional notes..."></td>
+            </tr>
+            <tr>
+              <td>Quality</td>
+              <td><div class="star-row">${scoreRadios('exec_quality_score','eqs')}</div></td>
+              <td><div class="trend-row">${trendRadios('exec_quality_trend','eqt')}</div></td>
+              <td><input type="text" name="exec_quality_notes" placeholder="Optional notes..."></td>
+            </tr>
+            <tr>
+              <td>Communication</td>
+              <td><div class="star-row">${scoreRadios('exec_comms_score','ecs')}</div></td>
+              <td><div class="trend-row">${trendRadios('exec_comms_trend','ect')}</div></td>
+              <td><input type="text" name="exec_comms_notes" placeholder="Optional notes..."></td>
+            </tr>
+            <tr>
+              <td>Commercial</td>
+              <td><div class="star-row">${scoreRadios('exec_commercial_score','ecom')}</div></td>
+              <td><div class="trend-row">${trendRadios('exec_commercial_trend','ecot')}</div></td>
+              <td><input type="text" name="exec_commercial_notes" placeholder="Optional notes..."></td>
+            </tr>
+            <tr>
+              <td>Your experience</td>
+              <td><div class="star-row">${scoreRadios('exec_cx_score','ecx')}</div></td>
+              <td><div class="trend-row">${trendRadios('exec_cx_trend','ext')}</div></td>
+              <td><input type="text" name="exec_cx_notes" placeholder="Optional notes..."></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Delivery -->
+      <div class="section">
+        <div class="section-label">Delivery performance</div>
+        <div class="two-col">
+          <div class="sub">
+            <div class="sub-title">Schedule</div>
+            <div class="score-group"><span class="fl">Score (1–5)</span><div class="star-row">${scoreRadios('schedule_score','ss')}</div></div>
+            <div class="field-group" style="margin-bottom:10px;"><label class="fl">Key drivers (internal)</label><textarea name="schedule_internal" placeholder="What internal factors affected schedule?"></textarea></div>
+            <div class="field-group"><label class="fl">Key drivers (external)</label><textarea name="schedule_external" placeholder="Permits, supply chain, weather, etc."></textarea></div>
+          </div>
+          <div class="sub">
+            <div class="sub-title">Budget experience</div>
+            <div class="score-group"><span class="fl">Score (1–5)</span><div class="star-row">${scoreRadios('budget_score','bs')}</div></div>
+            <div class="field-group" style="margin-bottom:10px;"><label class="fl">Scope clarity at kickoff</label><textarea name="budget_scope" placeholder="Was scope well-defined from the start?"></textarea></div>
+            <div class="field-group"><label class="fl">Change order experience</label><textarea name="budget_co_exp" placeholder="How were change orders handled?"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quality -->
+      <div class="section">
+        <div class="section-label">Quality &amp; execution</div>
+        <div class="two-col">
+          <div class="sub">
+            <div class="sub-title">Installation quality</div>
+            <div class="score-group"><span class="fl">Score (1–5)</span><div class="star-row">${scoreRadios('install_score','is')}</div></div>
+            <div class="field-group" style="margin-bottom:10px;"><label class="fl">Defects / rework observed</label><textarea name="install_defects" placeholder="Any issues with build quality?"></textarea></div>
+            <div class="field-group"><label class="fl">First-pass acceptance</label><textarea name="install_acceptance" placeholder="Were deliverables accepted without major revision?"></textarea></div>
+          </div>
+          <div class="sub">
+            <div class="sub-title">Technical performance</div>
+            <div class="score-group"><span class="fl">Score (1–5)</span><div class="star-row">${scoreRadios('tech_score','ts')}</div></div>
+            <div class="field-group" style="margin-bottom:10px;"><label class="fl">Network / system performance</label><textarea name="tech_network" placeholder="How did the solution perform?"></textarea></div>
+            <div class="field-group"><label class="fl">Testing &amp; commissioning</label><textarea name="tech_testing" placeholder="Any issues during testing or handover?"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Experience -->
+      <div class="section tinted">
+        <div class="section-label">Your experience <span class="badge">Most important</span></div>
+        <div class="intro-box" style="margin-bottom:18px;">
+          <p>This section matters most to us. Please be candid — your honest feedback is how we improve.</p>
+        </div>
+        <div class="two-col">
+          <div class="sub">
+            <div class="sub-title">Communication &amp; transparency</div>
+            <div class="score-group"><span class="fl">Score (1–5)</span><div class="star-row">${scoreRadios('cx_comms_score','ccs')}</div></div>
+            <div class="field-group" style="margin-bottom:10px;"><label class="fl">Quality of updates &amp; reporting</label><textarea name="cx_reporting" placeholder="Were updates timely and clear?"></textarea></div>
+            <div class="field-group"><label class="fl">Escalation handling</label><textarea name="cx_escalation" placeholder="How were issues escalated and resolved?"></textarea></div>
+          </div>
+          <div class="sub">
+            <div class="sub-title">Responsiveness</div>
+            <div class="score-group"><span class="fl">Score (1–5)</span><div class="star-row">${scoreRadios('cx_response_score','crs')}</div></div>
+            <div class="field-group" style="margin-bottom:10px;"><label class="fl">Issue resolution time</label><textarea name="cx_resolution" placeholder="How quickly were issues resolved?"></textarea></div>
+            <div class="field-group"><label class="fl">Team accessibility &amp; flexibility</label><textarea name="cx_accessibility" placeholder="Was the team easy to work with?"></textarea></div>
+          </div>
+        </div>
+        <hr class="div">
+        <div class="sub">
+          <div class="sub-title">Partnership</div>
+          <div class="score-group"><span class="fl">Score (1–5)</span><div class="star-row">${scoreRadios('cx_trust_score','cts')}</div></div>
+          <div class="field-grid">
+            <div class="field-group"><label class="fl">Did we feel like a partner vs a vendor?</label><textarea name="cx_partner" placeholder="How would you describe the working relationship?"></textarea></div>
+            <div class="field-group"><label class="fl">Did we anticipate your needs?</label><textarea name="cx_anticipate" placeholder="Were we proactive or reactive?"></textarea></div>
+          </div>
+        </div>
+        <hr class="div">
+        <div class="sub">
+          <div class="sub-title">Your words</div>
+          <div class="field-group" style="margin-bottom:12px;"><label class="fl">Direct feedback or quote (optional)</label>
+            <div class="quote-wrap"><textarea name="customer_quote" rows="3" placeholder="Any final thoughts, compliments, or concerns..."></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submitter -->
+      <div class="section">
+        <div class="section-label">About you</div>
+        <div class="field-grid">
+          <div class="field-group"><label class="fl" for="sub_name">Your name</label><input type="text" id="sub_name" name="submitter_name" placeholder="Full name"></div>
+          <div class="field-group"><label class="fl" for="sub_email">Your email</label><input type="email" id="sub_email" name="submitter_email" placeholder="you@company.com"></div>
+          <div class="field-group"><label class="fl" for="sub_title">Your title</label><input type="text" id="sub_title" name="submitter_title" placeholder="e.g. VP Operations"></div>
+        </div>
+      </div>
+
+      <div class="success-msg" id="success-msg">Thank you — your scorecard has been submitted. The Telamon team will follow up shortly.</div>
+
+      <div class="submit-bar">
+        <p class="submit-note">Your responses are sent directly and confidentially to the Telamon project team.</p>
+        <button type="submit" class="btn-primary" id="submit-btn">Submit feedback →</button>
+      </div>
+
+    </form>
+
+    <div class="card-footer"><p>Telamon &nbsp;·&nbsp; Project performance review &nbsp;·&nbsp; Confidential</p></div>
+  </div>`;
+
+  document.getElementById('cx-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+    try {
+      const res = await fetch(this.action, {method:'POST',body:new FormData(this),headers:{'Accept':'application/json'}});
+      if (res.ok) {
+        document.getElementById('success-msg').style.display = 'block';
+        btn.textContent = 'Submitted!';
+        this.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(el => el.disabled = true);
+      } else {
+        btn.disabled = false; btn.textContent = 'Submit feedback →';
+        alert('Submission failed. Please try again or contact the Telamon team.');
+      }
+    } catch(err) {
+      btn.disabled = false; btn.textContent = 'Submit feedback →';
+      alert('Network error. Please check your connection and try again.');
+    }
+  });
+}
+
+const params = getParams();
+if (params) {
+  renderCustomer(params);
+} else {
+  renderSetup();
+}
+</script>
+</body>
+</html>
