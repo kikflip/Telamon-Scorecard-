@@ -183,27 +183,70 @@ function renderSetup() {
     <div class="section">
       <div class="section-label">Budget details</div>
       <div class="field-grid">
-        <div class="field-group"><label class="fl" for="s_budget_orig">Original contract value</label><input type="text" id="s_budget_orig" placeholder="$0.00"></div>
-        <div class="field-group"><label class="fl" for="s_budget_final">Final value</label><input type="text" id="s_budget_final" placeholder="$0.00"></div>
-        <div class="field-group"><label class="fl" for="s_budget_co">Change orders (% of total)</label><input type="text" id="s_budget_co" placeholder="e.g. 8%"></div>
-        <div class="field-group"><label class="fl" for="s_budget_margin">Margin impact notes</label><input type="text" id="s_budget_margin" placeholder="Internal notes"></div>
+        <div class="field-group">
+          <label class="fl" for="s_budget_orig">Original contract value</label>
+          <input type="text" id="s_budget_orig" placeholder="e.g. 1250000" oninput="calcBudget()">
+        </div>
+        <div class="field-group">
+          <label class="fl" for="s_budget_final">Final value <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#a0a6b8;font-size:10px;">— auto-fills from project value</span></label>
+          <input type="text" id="s_budget_final" placeholder="e.g. 1340000" oninput="calcBudget()">
+        </div>
+        <div class="field-group">
+          <label class="fl" for="s_budget_co">Change order % <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#a0a6b8;font-size:10px;">— auto-calculated</span></label>
+          <input type="text" id="s_budget_co" placeholder="Auto" readonly style="background:#f5f6f8;color:#1a2e4a;font-weight:700;">
+        </div>
+        <div class="field-group">
+          <label class="fl" for="s_budget_margin">Margin impact notes</label>
+          <input type="text" id="s_budget_margin" placeholder="Internal notes">
+        </div>
       </div>
     </div>
 
     <div class="submit-bar">
-      <p class="submit-note">Once generated, copy the link and send it to your customer. Their responses will be emailed back to Telamon.</p>
-      <button class="btn-primary" onclick="generateLink()">Generate customer link →</button>
+      <p class="submit-note">Once generated, get a short link to send to your customer. Their responses will be emailed back to Telamon.</p>
+      <button class="btn-primary" onclick="generateLink()">→ Generate customer link</button>
     </div>
 
     <div class="share-box" id="share-box" style="display:none;margin:0 36px 24px;">
-      <p>Share this link with your customer:</p>
+      <p id="share-label" style="font-size:12px;color:#3b5279;margin-bottom:10px;font-weight:600;">Full link (click “Get short link” to shorten):</p>
       <div class="share-url-row">
         <input type="text" id="share-url" readonly>
-        <button onclick="copyLink()">Copy</button>
+        <button id="copy-btn" onclick="copyLink()">Copy</button>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button onclick="shortenLink()" id="shorten-btn" style="background:#fff;color:#1a2e4a;border:1.5px solid #1a2e4a;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Get short link</button>
+        <span id="shorten-status" style="font-size:12px;color:#7c82a0;"></span>
       </div>
     </div>
   </div>`;
 }
+
+function parseMoney(str) {
+  return parseFloat(str.replace(/[$,\s]/g, '')) || 0;
+}
+
+function calcBudget() {
+  const orig = parseMoney(document.getElementById('s_budget_orig').value);
+  const projVal = parseMoney(document.getElementById('s_value').value);
+  const finalEl = document.getElementById('s_budget_final');
+  const coEl = document.getElementById('s_budget_co');
+  if (!finalEl.dataset.userEdited && projVal > 0) {
+    finalEl.value = projVal.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+  }
+  const finalVal = parseMoney(finalEl.value);
+  if (orig > 0 && finalVal > 0) {
+    const pct = ((finalVal - orig) / orig * 100);
+    coEl.value = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+  } else {
+    coEl.value = '';
+  }
+}
+
+document.addEventListener('input', function(e) {
+  if (e.target.id === 's_value') calcBudget();
+  if (e.target.id === 's_budget_final') { e.target.dataset.userEdited = '1'; calcBudget(); }
+  if (e.target.id === 's_budget_orig') calcBudget();
+});
 
 function generateLink() {
   const data = {
@@ -223,15 +266,46 @@ function generateLink() {
   const url = window.location.href.split('#')[0] + '#' + encodeParams(data);
   document.getElementById('share-box').style.display = 'block';
   document.getElementById('share-url').value = url;
+  document.getElementById('share-label').textContent = 'Full link (click “Get short link” to shorten):';
+  document.getElementById('shorten-btn').style.display = 'inline-block';
+  document.getElementById('shorten-status').textContent = '';
 }
 
 function copyLink() {
   const el = document.getElementById('share-url');
   el.select();
-  document.execCommand('copy');
-  const btn = el.nextElementSibling;
+  try { document.execCommand('copy'); } catch(e) { navigator.clipboard && navigator.clipboard.writeText(el.value); }
+  const btn = document.getElementById('copy-btn');
   btn.textContent = 'Copied!';
   setTimeout(() => btn.textContent = 'Copy', 2000);
+}
+
+async function shortenLink() {
+  const longUrl = document.getElementById('share-url').value;
+  if (!longUrl) return;
+  const btn = document.getElementById('shorten-btn');
+  const status = document.getElementById('shorten-status');
+  btn.disabled = true;
+  btn.textContent = 'Shortening...';
+  status.textContent = '';
+  try {
+    const res = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl));
+    if (res.ok) {
+      const short = await res.text();
+      if (short.startsWith('http')) {
+        document.getElementById('share-url').value = short;
+        document.getElementById('share-label').textContent = 'Short link ready — copy and send to your customer:';
+        btn.style.display = 'none';
+        status.textContent = '✓ Link shortened successfully';
+        status.style.color = '#16a34a';
+      } else { throw new Error('bad response'); }
+    } else { throw new Error('api error'); }
+  } catch(e) {
+    status.textContent = 'Could not shorten — copy the full link above instead.';
+    status.style.color = '#dc2626';
+    btn.disabled = false;
+    btn.textContent = 'Try again';
+  }
 }
 
 function fmt(val, fallback) {
