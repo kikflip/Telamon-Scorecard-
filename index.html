@@ -117,14 +117,21 @@ const FORMSPREE_URL = 'https://formspree.io/f/xgororer';
 
 function getParams() {
   try {
-    const hash = window.location.hash.slice(1);
-    if (!hash) return null;
-    return JSON.parse(atob(hash));
-  } catch(e) { return null; }
+    const search = new URLSearchParams(window.location.search);
+    const d = search.get('d');
+    if (!d) return null;
+    const decoded = decodeURIComponent(escape(atob(d)));
+    const parsed = JSON.parse(decoded);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    return parsed;
+  } catch(e) {
+    console.error('getParams error:', e);
+    return null;
+  }
 }
 
 function encodeParams(data) {
-  return btoa(JSON.stringify(data));
+  return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
 }
 
 function scoreRadios(name, prefix) {
@@ -263,7 +270,8 @@ function generateLink() {
     budget_co: document.getElementById('s_budget_co').value,
     budget_margin: document.getElementById('s_budget_margin').value,
   };
-  const url = window.location.href.split('#')[0] + '#' + encodeParams(data);
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const url = base + '?d=' + encodeParams(data);
   document.getElementById('share-box').style.display = 'block';
   document.getElementById('share-url').value = url;
   document.getElementById('share-label').textContent = 'Full link (click “Get short link” to shorten):';
@@ -512,12 +520,14 @@ function renderCustomer(p) {
 function init() {
   try {
     const params = getParams();
-    if (params) {
+    console.log('init: params =', params);
+    if (params && typeof params === 'object') {
       renderCustomer(params);
     } else {
       renderSetup();
     }
   } catch(e) {
+    console.error('init error:', e);
     renderSetup();
   }
 }
