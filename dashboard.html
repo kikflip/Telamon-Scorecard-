@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telamon Scorecard Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px;line-height:1.5;}
+
+.topbar{background:#1a2e4a;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.topbar h1{color:#fff;font-size:17px;font-weight:700;letter-spacing:-.2px;}
+.topbar p{color:rgba(255,255,255,.45);font-size:12px;}
+.topbar-right{display:flex;gap:10px;align-items:center;}
+.btn{background:#fff;color:#1a2e4a;border:none;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap;}
+.btn:hover{opacity:.85;}
+.btn.danger{background:#fee2e2;color:#991b1b;}
+.btn.ghost{background:rgba(255,255,255,.12);color:#fff;}
+.btn.ghost:hover{background:rgba(255,255,255,.2);}
+
+.page{max-width:1100px;margin:0 auto;padding:24px 20px 60px;}
+
+.summary-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat{background:#fff;border:0.5px solid #dde1ea;border-radius:10px;padding:16px 18px;}
+.stat label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#7c82a0;font-weight:700;margin-bottom:6px;}
+.stat .val{font-size:26px;font-weight:700;color:#1a1a2e;line-height:1;}
+.stat .sub{font-size:11px;color:#7c82a0;margin-top:3px;}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+.toolbar input,.toolbar select{padding:9px 12px;border:1px solid #dde1ea;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;background:#fff;outline:none;}
+.toolbar input{flex:1;min-width:180px;}
+.toolbar input:focus,.toolbar select:focus{border-color:#1a2e4a;}
+.toolbar select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237c82a0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+
+.no-data{background:#fff;border:0.5px solid #dde1ea;border-radius:12px;padding:60px 32px;text-align:center;}
+.no-data h3{font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:8px;}
+.no-data p{font-size:13px;color:#7c82a0;max-width:340px;margin:0 auto;}
+
+.table-wrap{background:#fff;border:0.5px solid #dde1ea;border-radius:12px;overflow:hidden;margin-bottom:24px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:#f7f9fc;border-bottom:1px solid #eceef3;}
+th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c82a0;padding:12px 14px;white-space:nowrap;}
+th.sortable{cursor:pointer;user-select:none;}
+th.sortable:hover{color:#1a2e4a;}
+td{padding:12px 14px;border-bottom:0.5px solid #f0f1f5;vertical-align:middle;color:#1a1a2e;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafbfc;}
+.customer-tag{background:#e0f2fe;color:#0c4a6e;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+.type-tag{background:#f0f1f6;color:#374151;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;}
+.score-pill{display:inline-flex;align-items:center;justify-content:center;width:32px;height:24px;border-radius:5px;font-size:12px;font-weight:700;}
+.s5{background:#d1fae5;color:#065f46;}
+.s4{background:#dcfce7;color:#166534;}
+.s3{background:#fef9c3;color:#854d0e;}
+.s2{background:#fee2e2;color:#991b1b;}
+.s1{background:#fecaca;color:#7f1d1d;}
+.s0{background:#f0f1f6;color:#9ca3af;}
+.trend{font-size:14px;font-weight:700;}
+.up{color:#16a34a;}.flat{color:#6b7280;}.dn{color:#dc2626;}
+.expand-btn{background:none;border:none;cursor:pointer;color:#7c82a0;font-size:14px;padding:2px 6px;border-radius:4px;}
+.expand-btn:hover{background:#f0f1f6;color:#1a2e4a;}
+.detail-row td{background:#f7f9fc;padding:0;}
+.detail-inner{padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.detail-group h4{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c82a0;margin-bottom:8px;}
+.detail-group .drow{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:0.5px solid #eceef3;}
+.detail-group .drow:last-child{border-bottom:none;}
+.detail-group .drow span{color:#7c82a0;}
+.detail-group .drow strong{color:#1a1a2e;font-weight:600;}
+.quote-block{background:#fff;border-left:2px solid #1a2e4a;border-radius:0 6px 6px 0;padding:10px 14px;margin-top:8px;font-size:13px;font-style:italic;color:#1a1a2e;}
+.quote-attr{font-size:11px;color:#7c82a0;font-style:normal;margin-top:4px;}
+
+.chart-section{background:#fff;border:0.5px solid #dde1ea;border-radius:12px;padding:20px;margin-bottom:24px;}
+.chart-section h3{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:16px;}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+
+.section-head{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7c82a0;margin-bottom:12px;}
+
+.import-area{background:#fff;border:1.5px dashed #c7d7f0;border-radius:10px;padding:20px;margin-bottom:20px;}
+.import-area h4{font-size:13px;font-weight:700;color:#1a2e4a;margin-bottom:6px;}
+.import-area p{font-size:12px;color:#7c82a0;margin-bottom:10px;}
+.import-area textarea{width:100%;padding:9px 12px;border:1px solid #dde1ea;border-radius:8px;font-size:12px;font-family:monospace;color:#1a1a2e;min-height:80px;resize:vertical;outline:none;}
+.import-area textarea:focus{border-color:#1a2e4a;}
+
+@media(max-width:700px){
+  .topbar{padding:14px 16px;}
+  .page{padding:16px 12px 40px;}
+  .chart-grid{grid-template-columns:1fr;}
+  .summary-row{grid-template-columns:1fr 1fr;}
+  th,td{padding:10px 10px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Telamon &mdash; Scorecard Database</h1>
+    <p>All customer project responses</p>
+  </div>
+  <div class="topbar-right">
+    <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
+    <button class="btn" onclick="document.getElementById('import-section').style.display=document.getElementById('import-section').style.display==='none'?'block':'none'">Import JSON</button>
+    <button class="btn danger" onclick="confirmClear()">Clear all</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <div id="import-section" style="display:none;">
+    <div class="import-area">
+      <h4>Import records (JSON)</h4>
+      <p>Paste exported JSON here to restore records on a new device or browser.</p>
+      <textarea id="import-json" placeholder='[{"id":"...","customer_account":"..."}]'></textarea>
+      <button class="btn" style="margin-top:10px;background:#1a2e4a;color:#fff;" onclick="importJSON()">Import</button>
+    </div>
+  </div>
+
+  <div id="summary-row" class="summary-row"></div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search by customer, project, PM..." oninput="renderTable()">
+    <select id="filter-account" onchange="renderTable()"><option value="">All accounts</option></select>
+    <select id="filter-type" onchange="renderTable()"><option value="">All project types</option></select>
+    <select id="sort-by" onchange="renderTable()">
+      <option value="date-desc">Newest first</option>
+      <option value="date-asc">Oldest first</option>
+      <option value="score-desc">Highest score</option>
+      <option value="score-asc">Lowest score</option>
+    </select>
+  </div>
+
+  <div id="table-area"></div>
+  <div id="charts-area"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const DB_KEY = 'telamon_scorecards';
+
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function scoreClass(n) {
+  const v = parseInt(n);
+  if (!v) return 's0';
+  if (v >= 5) return 's5';
+  if (v >= 4) return 's4';
+  if (v >= 3) return 's3';
+  if (v >= 2) return 's2';
+  return 's1';
+}
+
+function trendEl(t) {
+  if (t === '↑') return '<span class="trend up">↑</span>';
+  if (t === '↓') return '<span class="trend dn">↓</span>';
+  if (t === '→') return '<span class="trend flat">→</span>';
+  return '<span style="color:#ccc;">—</span>';
+}
+
+function avgScore(r) {
+  const fields = ['exec_delivery_score','exec_quality_score','exec_comms_score','exec_cx_score'];
+  const vals = fields.map(f => parseInt(r[f])).filter(v => v > 0);
+  if (!vals.length) return null;
+  return (vals.reduce((a,b) => a+b, 0) / vals.length);
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}); }
+  catch(e) { return iso; }
+}
+
+function pill(n) {
+  if (!n) return '<span class="score-pill s0">—</span>';
+  return `<span class="score-pill ${scoreClass(n)}">${n}</span>`;
+}
+
+function renderSummary(records) {
+  const el = document.getElementById('summary-row');
+  if (!records.length) { el.innerHTML = ''; return; }
+  const allAvgs = records.map(r => avgScore(r)).filter(v => v !== null);
+  const overallAvg = allAvgs.length ? (allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length).toFixed(1) : '—';
+  const accounts = [...new Set(records.map(r => r.customer_account).filter(Boolean))];
+  const latest = records.slice().sort((a,b) => b.submitted_at.localeCompare(a.submitted_at))[0];
+  const cxScores = records.map(r => parseInt(r.exec_cx_score)).filter(v => v > 0);
+  const avgCx = cxScores.length ? (cxScores.reduce((a,b)=>a+b,0)/cxScores.length).toFixed(1) : '—';
+
+  el.innerHTML = `
+    <div class="stat"><label>Total responses</label><div class="val">${records.length}</div><div class="sub">all time</div></div>
+    <div class="stat"><label>Customer accounts</label><div class="val">${accounts.length}</div><div class="sub">unique</div></div>
+    <div class="stat"><label>Overall avg score</label><div class="val">${overallAvg}</div><div class="sub">out of 5</div></div>
+    <div class="stat"><label>Avg CX score</label><div class="val">${avgCx}</div><div class="sub">customer experience</div></div>
+    <div class="stat"><label>Latest submission</label><div class="val" style="font-size:15px;">${fmtDate(latest.submitted_at)}</div><div class="sub">${latest.customer_account || latest.customer || '—'}</div></div>
+  `;
+}
+
+function populateFilters(records) {
+  const accEl = document.getElementById('filter-account');
+  const typeEl = document.getElementById('filter-type');
+  const accounts = [...new Set(records.map(r => r.customer_account).filter(Boolean))].sort();
+  const types = [...new Set(records.map(r => r.project_type).filter(Boolean))].sort();
+  const selAcc = accEl.value, selType = typeEl.value;
+  accEl.innerHTML = '<option value="">All accounts</option>' + accounts.map(a => `<option${a===selAcc?' selected':''}>${a}</option>`).join('');
+  typeEl.innerHTML = '<option value="">All project types</option>' + types.map(t => `<option${t===selType?' selected':''}>${t}</option>`).join('');
+}
+
+function filterRecords(records) {
+  const search = document.getElementById('search').value.toLowerCase();
+  const account = document.getElementById('filter-account').value;
+  const type = document.getElementById('filter-type').value;
+  const sort = document.getElementById('sort-by').value;
+
+  let filtered = records.filter(r => {
+    if (account && r.customer_account !== account) return false;
+    if (type && r.project_type !== type) return false;
+    if (search) {
+      const hay = [r.customer_account,r.customer,r.project_name,r.pm,r.project_type,r.submitter_name].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    if (sort === 'date-desc') return b.submitted_at.localeCompare(a.submitted_at);
+    if (sort === 'date-asc') return a.submitted_at.localeCompare(b.submitted_at);
+    const sa = avgScore(a) || 0, sb = avgScore(b) || 0;
+    return sort === 'score-desc' ? sb - sa : sa - sb;
+  });
+
+  return filtered;
+}
+
+let expandedRows = new Set();
+
+function renderTable() {
+  const all = getRecords();
+  populateFilters(all);
+  renderSummary(all);
+  const records = filterRecords(all);
+  const area = document.getElementById('table-area');
+
+  if (!all.length) {
+    area.innerHTML = `<div class="no-data"><h3>No responses yet</h3><p>Customer scorecard submissions will appear here automatically once they're submitted.</p></div>`;
+    renderCharts([]);
+    return;
+  }
+
+  if (!records.length) {
+    area.innerHTML = `<div class="no-data"><h3>No matches</h3><p>Try adjusting your search or filters.</p></div>`;
+    renderCharts([]);
+    return;
+  }
+
+  const rows = records.map((r, i) => {
+    const avg = avgScore(r);
+    const avgStr = avg ? avg.toFixed(1) : '—';
+    const isExpanded = expandedRows.has(r.id);
+    const detailHtml = isExpanded ? buildDetailRow(r) : '';
+    return `
+      <tr>
+        <td><button class="expand-btn" onclick="toggleRow('${r.id}')">${isExpanded ? '▾' : '▸'}</button></td>
+        <td><span class="customer-tag">${r.customer_account || r.customer || '—'}</span></td>
+        <td style="font-weight:600;">${r.project_name || '—'}</td>
+        <td><span class="type-tag">${r.project_type || '—'}</span></td>
+        <td>${r.pm || '—'}</td>
+        <td>${fmtDate(r.submitted_at)}</td>
+        <td style="font-weight:700;color:${!avg ? '#ccc' : avg >= 4 ? '#166534' : avg >= 3 ? '#854d0e' : '#991b1b'}">${avgStr}</td>
+        <td>${pill(r.exec_delivery_score)}</td>
+        <td>${pill(r.exec_quality_score)}</td>
+        <td>${pill(r.exec_comms_score)}</td>
+        <td>${pill(r.exec_cx_score)}</td>
+        <td><button class="expand-btn" onclick="deleteRecord('${r.id}')" title="Delete" style="color:#dc2626;">&#10005;</button></td>
+      </tr>
+      ${isExpanded ? `<tr class="detail-row"><td colspan="12">${buildDetailRow(r)}</td></tr>` : ''}
+    `;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px;"></th>
+            <th>Account</th>
+            <th>Project</th>
+            <th>Type</th>
+            <th>PM</th>
+            <th class="sortable" onclick="setSortDate()">Date</th>
+            <th class="sortable" onclick="setSortScore()">Avg</th>
+            <th>Delivery</th>
+            <th>Quality</th>
+            <th>Comms</th>
+            <th>CX</th>
+            <th style="width:32px;"></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+  renderCharts(records);
+}
+
+function buildDetailRow(r) {
+  return `<div class="detail-inner">
+    <div class="detail-group">
+      <h4>Project info</h4>
+      <div class="drow"><span>Customer</span><strong>${r.customer||'—'}</strong></div>
+      <div class="drow"><span>Project value</span><strong>${r.project_value||'—'}</strong></div>
+      <div class="drow"><span>Planned</span><strong>${r.planned||'—'}</strong></div>
+      <div class="drow"><span>Actual</span><strong>${r.actual||'—'}</strong></div>
+      <div class="drow"><span>Budget orig</span><strong>${r.budget_orig||'—'}</strong></div>
+      <div class="drow"><span>Budget final</span><strong>${r.budget_final||'—'}</strong></div>
+      <div class="drow"><span>Change orders</span><strong>${r.budget_co||'—'}</strong></div>
+    </div>
+    <div class="detail-group">
+      <h4>Detailed scores</h4>
+      <div class="drow"><span>Schedule</span><strong>${r.schedule_score||'—'} / 5</strong></div>
+      <div class="drow"><span>Budget</span><strong>${r.budget_score||'—'} / 5</strong></div>
+      <div class="drow"><span>Installation</span><strong>${r.install_score||'—'} / 5</strong></div>
+      <div class="drow"><span>Technical</span><strong>${r.tech_score||'—'} / 5</strong></div>
+      <div class="drow"><span>CX Communication</span><strong>${r.cx_comms_score||'—'} / 5</strong></div>
+      <div class="drow"><span>Responsiveness</span><strong>${r.cx_response_score||'—'} / 5</strong></div>
+      <div class="drow"><span>Trust / Partnership</span><strong>${r.cx_trust_score||'—'} / 5</strong></div>
+    </div>
+    <div class="detail-group">
+      <h4>Submitter</h4>
+      <div class="drow"><span>Name</span><strong>${r.submitter_name||'—'}</strong></div>
+      <div class="drow"><span>Email</span><strong>${r.submitter_email||'—'}</strong></div>
+      <div class="drow"><span>Title</span><strong>${r.submitter_title||'—'}</strong></div>
+      ${r.customer_quote ? `<div style="margin-top:10px;"><div class="quote-block">"${r.customer_quote}"</div>${r.submitter_name?`<div class="quote-attr">— ${r.submitter_name}${r.submitter_title?', '+r.submitter_title:''}</div>`:''}</div>` : ''}
+    </div>
+    <div class="detail-group">
+      <h4>Written feedback</h4>
+      ${r.schedule_internal ? `<div class="drow"><span>Schedule (internal)</span><strong style="max-width:160px;text-align:right;font-weight:400;">${r.schedule_internal}</strong></div>` : ''}
+      ${r.cx_reporting ? `<div class="drow"><span>CX reporting</span><strong style="max-width:160px;text-align:right;font-weight:400;">${r.cx_reporting}</strong></div>` : ''}
+      ${r.cx_partner ? `<div class="drow"><span>Partnership</span><strong style="max-width:160px;text-align:right;font-weight:400;">${r.cx_partner}</strong></div>` : ''}
+      ${!r.schedule_internal && !r.cx_reporting && !r.cx_partner ? '<div style="font-size:12px;color:#9ca3af;margin-top:4px;">No written feedback provided</div>' : ''}
+    </div>
+  </div>`;
+}
+
+let chartInstances = [];
+function renderCharts(records) {
+  chartInstances.forEach(c => c.destroy());
+  chartInstances = [];
+  const area = document.getElementById('charts-area');
+  if (records.length < 2) { area.innerHTML = ''; return; }
+
+  area.innerHTML = `
+    <div class="chart-section">
+      <h3>Score trends over time</h3>
+      <div class="chart-grid">
+        <div>
+          <div style="position:relative;height:220px;"><canvas id="trendChart" role="img" aria-label="Score trends over time"></canvas></div>
+        </div>
+        <div>
+          <div style="position:relative;height:220px;"><canvas id="catChart" role="img" aria-label="Average scores by category"></canvas></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const sorted = records.slice().sort((a,b) => a.submitted_at.localeCompare(b.submitted_at));
+  const labels = sorted.map(r => (r.project_name || r.customer || fmtDate(r.submitted_at)).substring(0,12));
+
+  chartInstances.push(new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Delivery', data: sorted.map(r => parseInt(r.exec_delivery_score)||null), borderColor:'#1d9e75', backgroundColor:'rgba(29,158,117,.08)', tension:.3, pointRadius:4, borderWidth:2 },
+        { label: 'Quality', data: sorted.map(r => parseInt(r.exec_quality_score)||null), borderColor:'#378add', backgroundColor:'rgba(55,138,221,.08)', tension:.3, pointRadius:4, borderWidth:2 },
+        { label: 'Communication', data: sorted.map(r => parseInt(r.exec_comms_score)||null), borderColor:'#ba7517', backgroundColor:'rgba(186,117,23,.08)', tension:.3, pointRadius:4, borderWidth:2 },
+        { label: 'CX', data: sorted.map(r => parseInt(r.exec_cx_score)||null), borderColor:'#7f77dd', backgroundColor:'rgba(127,119,221,.08)', tension:.3, pointRadius:4, borderWidth:2 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:10, font:{size:11} } } },
+      scales:{
+        y:{ min:0, max:5, ticks:{stepSize:1,font:{size:11},color:'#9ca3af'}, grid:{color:'rgba(0,0,0,.05)'} },
+        x:{ ticks:{font:{size:10},color:'#9ca3af',maxRotation:30}, grid:{display:false} }
+      }
+    }
+  }));
+
+  const catAvg = (field) => {
+    const vals = records.map(r => parseInt(r[field])).filter(v => v > 0);
+    return vals.length ? parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)) : 0;
+  };
+
+  const catLabels = ['Delivery','Quality','Comms','CX','Schedule','Budget','Install','Technical','CX Comms','Responsive','Trust'];
+  const catFields = ['exec_delivery_score','exec_quality_score','exec_comms_score','exec_cx_score','schedule_score','budget_score','install_score','tech_score','cx_comms_score','cx_response_score','cx_trust_score'];
+  const catData = catFields.map(f => catAvg(f));
+  const catColors = catData.map(v => v >= 4 ? '#1d9e75' : v >= 3 ? '#ba7517' : v > 0 ? '#e24b4a' : '#e5e7eb');
+
+  chartInstances.push(new Chart(document.getElementById('catChart'), {
+    type: 'bar',
+    data: {
+      labels: catLabels,
+      datasets: [{ label: 'Avg score', data: catData, backgroundColor: catColors, borderRadius:4, borderSkipped:false }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        y:{ min:0, max:5, ticks:{stepSize:1,font:{size:11},color:'#9ca3af'}, grid:{color:'rgba(0,0,0,.05)'} },
+        x:{ ticks:{font:{size:9},color:'#9ca3af',maxRotation:45,autoSkip:false}, grid:{display:false} }
+      }
+    }
+  }));
+}
+
+function toggleRow(id) {
+  if (expandedRows.has(id)) expandedRows.delete(id);
+  else expandedRows.add(id);
+  renderTable();
+}
+
+function deleteRecord(id) {
+  if (!confirm('Delete this response? This cannot be undone.')) return;
+  const records = getRecords().filter(r => r.id !== id);
+  localStorage.setItem(DB_KEY, JSON.stringify(records));
+  expandedRows.delete(id);
+  renderTable();
+}
+
+function confirmClear() {
+  if (!confirm('Delete ALL scorecard responses? This cannot be undone.')) return;
+  localStorage.removeItem(DB_KEY);
+  renderTable();
+}
+
+function setSortDate() {
+  const el = document.getElementById('sort-by');
+  el.value = el.value === 'date-desc' ? 'date-asc' : 'date-desc';
+  renderTable();
+}
+function setSortScore() {
+  const el = document.getElementById('sort-by');
+  el.value = el.value === 'score-desc' ? 'score-asc' : 'score-desc';
+  renderTable();
+}
+
+function exportCSV() {
+  const records = filterRecords(getRecords());
+  if (!records.length) { alert('No records to export.'); return; }
+  const keys = Object.keys(records[0]);
+  const csv = [keys.join(','), ...records.map(r => keys.map(k => JSON.stringify(r[k]||'')).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'telamon_scorecards_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function importJSON() {
+  try {
+    const raw = document.getElementById('import-json').value.trim();
+    const incoming = JSON.parse(raw);
+    if (!Array.isArray(incoming)) throw new Error('Expected array');
+    const existing = getRecords();
+    const existingIds = new Set(existing.map(r => r.id));
+    const merged = [...existing, ...incoming.filter(r => !existingIds.has(r.id))];
+    localStorage.setItem(DB_KEY, JSON.stringify(merged));
+    document.getElementById('import-json').value = '';
+    document.getElementById('import-section').style.display = 'none';
+    renderTable();
+    alert(`Imported ${incoming.length} records.`);
+  } catch(e) {
+    alert('Invalid JSON. Please check the format and try again.');
+  }
+}
+
+renderTable();
+</script>
+</body>
+</html>

@@ -166,7 +166,7 @@ function renderSetup() {
     <div class="section">
       <div class="section-label">Project overview</div>
       <div class="field-grid">
-        <div class="field-group"><label class="fl" for="s_customer">Customer</label><input type="text" id="s_customer" placeholder="Company name"></div>
+        <div class="field-group"><label class="fl" for="s_customer_account">Customer account <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#a0a6b8;font-size:10px;">— for grouping projects</span></label><input type="text" id="s_customer_account" placeholder="e.g. AT&amp;T, Verizon"></div>
         <div class="field-group"><label class="fl" for="s_project_name">Project name</label><input type="text" id="s_project_name" placeholder="Project name"></div>
         <div class="field-group"><label class="fl" for="s_project_type">Project type</label>
           <select id="s_project_type">
@@ -261,6 +261,7 @@ document.addEventListener('input', function(e) {
 
 function generateLink() {
   const data = {
+    customer_account: document.getElementById('s_customer_account').value,
     customer: document.getElementById('s_customer').value,
     project_name: document.getElementById('s_project_name').value,
     project_type: document.getElementById('s_project_type').value,
@@ -347,6 +348,7 @@ function renderCustomer(p) {
 
     <form id="cx-form" action="${FORMSPREE_URL}" method="POST">
 
+      <input type="hidden" name="_customer_account" value="${p.customer_account||''}">
       <input type="hidden" name="_project_name" value="${p.project_name||''}">
       <input type="hidden" name="_customer" value="${p.customer||''}">
       <input type="hidden" name="_project_type" value="${p.project_type||''}">
@@ -505,8 +507,10 @@ function renderCustomer(p) {
     const btn = document.getElementById('submit-btn');
     btn.disabled = true; btn.textContent = 'Sending...';
     try {
-      const res = await fetch(this.action, {method:'POST',body:new FormData(this),headers:{'Accept':'application/json'}});
+      const fd = new FormData(this);
+      const res = await fetch(this.action, {method:'POST',body:fd,headers:{'Accept':'application/json'}});
       if (res.ok) {
+        saveToDatabase(fd, p);
         document.getElementById('success-msg').style.display = 'block';
         btn.textContent = 'Submitted!';
         this.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(el => el.disabled = true);
@@ -519,6 +523,62 @@ function renderCustomer(p) {
       alert('Network error. Please check your connection and try again.');
     }
   });
+}
+
+function saveToDatabase(fd, projectData) {
+  try {
+    const record = {
+      id: Date.now().toString(),
+      submitted_at: new Date().toISOString(),
+      customer_account: projectData.customer_account || '',
+      customer: projectData.customer || '',
+      project_name: projectData.project_name || '',
+      project_type: projectData.project_type || '',
+      project_value: projectData.value || '',
+      planned: projectData.planned || '',
+      actual: projectData.actual || '',
+      pm: projectData.pm || '',
+      sponsor: projectData.sponsor || '',
+      budget_orig: projectData.budget_orig || '',
+      budget_final: projectData.budget_final || '',
+      budget_co: projectData.budget_co || '',
+      exec_delivery_score: fd.get('exec_delivery_score') || '',
+      exec_delivery_trend: fd.get('exec_delivery_trend') || '',
+      exec_quality_score: fd.get('exec_quality_score') || '',
+      exec_quality_trend: fd.get('exec_quality_trend') || '',
+      exec_comms_score: fd.get('exec_comms_score') || '',
+      exec_comms_trend: fd.get('exec_comms_trend') || '',
+      exec_cx_score: fd.get('exec_cx_score') || '',
+      exec_cx_trend: fd.get('exec_cx_trend') || '',
+      schedule_score: fd.get('schedule_score') || '',
+      budget_score: fd.get('budget_score') || '',
+      install_score: fd.get('install_score') || '',
+      tech_score: fd.get('tech_score') || '',
+      cx_comms_score: fd.get('cx_comms_score') || '',
+      cx_response_score: fd.get('cx_response_score') || '',
+      cx_trust_score: fd.get('cx_trust_score') || '',
+      schedule_internal: fd.get('schedule_internal') || '',
+      schedule_external: fd.get('schedule_external') || '',
+      budget_scope: fd.get('budget_scope') || '',
+      budget_co_exp: fd.get('budget_co_exp') || '',
+      install_defects: fd.get('install_defects') || '',
+      cx_reporting: fd.get('cx_reporting') || '',
+      cx_escalation: fd.get('cx_escalation') || '',
+      cx_resolution: fd.get('cx_resolution') || '',
+      cx_accessibility: fd.get('cx_accessibility') || '',
+      cx_partner: fd.get('cx_partner') || '',
+      cx_anticipate: fd.get('cx_anticipate') || '',
+      customer_quote: fd.get('customer_quote') || '',
+      submitter_name: fd.get('submitter_name') || '',
+      submitter_email: fd.get('submitter_email') || '',
+      submitter_title: fd.get('submitter_title') || '',
+    };
+    const existing = JSON.parse(localStorage.getItem('telamon_scorecards') || '[]');
+    existing.push(record);
+    localStorage.setItem('telamon_scorecards', JSON.stringify(existing));
+  } catch(e) {
+    console.warn('Could not save to local database:', e);
+  }
 }
 
 function init() {
