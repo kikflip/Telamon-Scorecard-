@@ -187,7 +187,7 @@ function renderSetup() {
         <div class="field-group"><label class="fl" for="s_planned">Planned completion</label><input type="date" id="s_planned"></div>
         <div class="field-group"><label class="fl" for="s_actual">Actual completion</label><input type="date" id="s_actual"></div>
         <div class="field-group"><label class="fl" for="s_sponsor">Customer sponsor</label><input type="text" id="s_sponsor" placeholder="Name & title"></div>
-        <div class="field-group"><label class="fl" for="s_value">Project value</label><input type="text" id="s_value" placeholder="e.g. $1,250,000"></div>
+        <div class="field-group"><label class="fl" for="s_value">Project value</label><input type="text" id="s_value" placeholder="e.g. $1,250,000" oninput="calcBudget()"></div>
       </div>
     </div>
 
@@ -237,51 +237,63 @@ function parseMoney(str) {
 }
 
 function calcBudget() {
-  const orig = parseMoney(document.getElementById('s_budget_orig').value);
-  const projVal = parseMoney(document.getElementById('s_value').value);
-  const finalEl = document.getElementById('s_budget_final');
-  const coEl = document.getElementById('s_budget_co');
-  if (!finalEl.dataset.userEdited && projVal > 0) {
-    finalEl.value = projVal.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
-  }
-  const finalVal = parseMoney(finalEl.value);
-  if (orig > 0 && finalVal > 0) {
-    const pct = ((finalVal - orig) / orig * 100);
-    coEl.value = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
-  } else {
-    coEl.value = '';
-  }
+  try {
+    const origEl = document.getElementById('s_budget_orig');
+    const projValEl = document.getElementById('s_value');
+    const finalEl = document.getElementById('s_budget_final');
+    const coEl = document.getElementById('s_budget_co');
+    if (!origEl || !projValEl || !finalEl || !coEl) return;
+    const orig = parseMoney(origEl.value);
+    const projVal = parseMoney(projValEl.value);
+    if (!finalEl.dataset.userEdited && projVal > 0) {
+      finalEl.value = projVal.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+    }
+    const finalVal = parseMoney(finalEl.value);
+    if (orig > 0 && finalVal > 0) {
+      const pct = ((finalVal - orig) / orig * 100);
+      coEl.value = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    } else {
+      coEl.value = '';
+    }
+  } catch(e) {}
 }
 
-document.addEventListener('input', function(e) {
-  if (e.target.id === 's_value') calcBudget();
-  if (e.target.id === 's_budget_final') { e.target.dataset.userEdited = '1'; calcBudget(); }
-  if (e.target.id === 's_budget_orig') calcBudget();
-});
-
 function generateLink() {
-  const data = {
-    customer_account: document.getElementById('s_customer_account').value,
-    customer: document.getElementById('s_customer').value,
-    project_name: document.getElementById('s_project_name').value,
-    project_type: document.getElementById('s_project_type').value,
-    pm: document.getElementById('s_pm').value,
-    planned: document.getElementById('s_planned').value,
-    actual: document.getElementById('s_actual').value,
-    sponsor: document.getElementById('s_sponsor').value,
-    value: document.getElementById('s_value').value,
-    budget_orig: document.getElementById('s_budget_orig').value,
-    budget_final: document.getElementById('s_budget_final').value,
-    budget_co: document.getElementById('s_budget_co').value,
-    budget_margin: document.getElementById('s_budget_margin').value,
-  };
-  const base = window.location.href.split('?')[0].split('#')[0];
-  const url = base + '#' + encodeParams(data);
-  document.getElementById('share-box').style.display = 'block';
-  document.getElementById('share-url').value = url;
-  document.getElementById('share-label').textContent = 'Full link (click “Get short link” to shorten):';
-  document.getElementById('shorten-btn').style.display = 'inline-block';
-  document.getElementById('shorten-status').textContent = '';
+  try {
+    var get = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
+    var data = {
+      customer_account: get('s_customer_account'),
+      customer: get('s_customer'),
+      project_name: get('s_project_name'),
+      project_type: get('s_project_type'),
+      pm: get('s_pm'),
+      planned: get('s_planned'),
+      actual: get('s_actual'),
+      sponsor: get('s_sponsor'),
+      value: get('s_value'),
+      budget_orig: get('s_budget_orig'),
+      budget_final: get('s_budget_final'),
+      budget_co: get('s_budget_co'),
+      budget_margin: get('s_budget_margin'),
+    };
+    var base = window.location.href.split('?')[0].split('#')[0];
+    var url = base + '#' + encodeParams(data);
+    var shareBox = document.getElementById('share-box');
+    var shareUrl = document.getElementById('share-url');
+    if (!shareBox || !shareUrl) { alert('Page not ready. Please try again.'); return; }
+    shareBox.style.display = 'block';
+    shareUrl.value = url;
+    var lbl = document.getElementById('share-label');
+    var btn = document.getElementById('shorten-btn');
+    var sts = document.getElementById('shorten-status');
+    if (lbl) lbl.textContent = 'Copy this link and send to your customer:';
+    if (btn) btn.style.display = 'inline-block';
+    if (sts) sts.textContent = '';
+    shareBox.scrollIntoView({behavior:'smooth',block:'nearest'});
+  } catch(err) {
+    console.error('generateLink error:', err);
+    alert('Error: ' + err.message);
+  }
 }
 
 function copyLink() {
