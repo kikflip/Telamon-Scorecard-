@@ -98,6 +98,7 @@ tr:hover td{background:#fafbfc;}
   </div>
   <div class="topbar-right">
     <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
+    <button class="btn" style="background:#34D399;color:#064E3B;font-weight:700;" onclick="copyJSON()">Copy JSON for Portal</button>
     <button class="btn" onclick="document.getElementById('import-section').style.display=document.getElementById('import-section').style.display==='none'?'block':'none'">Import JSON</button>
     <button class="btn danger" onclick="confirmClear()">Clear all</button>
   </div>
@@ -475,6 +476,38 @@ function importJSON() {
 }
 
 renderTable();
+
+function copyJSON() {
+  const data = localStorage.getItem('telamon_scorecards') || '[]';
+  const records = JSON.parse(data);
+  if (!records.length) {
+    alert('No scorecard records found. Submit some scorecards first.');
+    return;
+  }
+  // Use clipboard API
+  navigator.clipboard.writeText(data).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied! Now paste in portal';
+    btn.style.background = '#059669';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = '#34D399'; }, 3000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = data;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied! Now paste in portal';
+    btn.style.background = '#059669';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = '#34D399'; }, 3000);
+  });
+}
 </script>
 </body>
 </html>
