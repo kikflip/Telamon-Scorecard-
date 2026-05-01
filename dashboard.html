@@ -121,6 +121,7 @@ tr:hover td{background:#fafbfc;}
     <input type="text" id="search" placeholder="Search by customer, project, PM..." oninput="renderTable()">
     <select id="filter-account" onchange="renderTable()"><option value="">All accounts</option></select>
     <select id="filter-type" onchange="renderTable()"><option value="">All project types</option></select>
+      <select id="filter-pm" onchange="renderTable()"><option value="">All PMs</option></select>
     <select id="sort-by" onchange="renderTable()">
       <option value="date-desc">Newest first</option>
       <option value="date-asc">Oldest first</option>
@@ -180,29 +181,30 @@ function pill(n) {
 
 function renderSummary(records) {
   const el = document.getElementById('summary-row');
-  if (!records.length) { el.innerHTML = ''; return; 
-  // NPS calculation
-  const npsVals = records.filter(r => r.nps_score !== undefined && r.nps_score !== '').map(r => parseInt(r.nps_score));
-  if (npsVals.length) {
-    const promoters = npsVals.filter(v => v >= 9).length;
-    const detractors = npsVals.filter(v => v <= 6).length;
-    const nps = Math.round(((promoters - detractors) / npsVals.length) * 100);
-    const el = document.getElementById('stat-nps');
-    if (el) { el.textContent = (nps >= 0 ? '+' : '') + nps; el.style.color = nps >= 30 ? '#166534' : nps >= 0 ? '#854d0e' : '#991b1b'; }
-  }
-}
+  if (!records.length) { el.innerHTML = ''; return; }
   const allAvgs = records.map(r => avgScore(r)).filter(v => v !== null);
   const overallAvg = allAvgs.length ? (allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length).toFixed(1) : '—';
   const accounts = [...new Set(records.map(r => r.customer_account).filter(Boolean))];
   const latest = records.slice().sort((a,b) => b.submitted_at.localeCompare(a.submitted_at))[0];
   const cxScores = records.map(r => parseInt(r.exec_cx_score)).filter(v => v > 0);
   const avgCx = cxScores.length ? (cxScores.reduce((a,b)=>a+b,0)/cxScores.length).toFixed(1) : '—';
-
+  // NPS calculation
+  const npsVals = records.filter(r => r.nps_score !== undefined && r.nps_score !== '').map(r => parseInt(r.nps_score));
+  let npsDisplay = '—';
+  let npsColor = '#ccc';
+  if (npsVals.length) {
+    const promoters = npsVals.filter(v => v >= 9).length;
+    const detractors = npsVals.filter(v => v <= 6).length;
+    const nps = Math.round(((promoters - detractors) / npsVals.length) * 100);
+    npsDisplay = (nps >= 0 ? '+' : '') + nps;
+    npsColor = nps >= 30 ? '#166534' : nps >= 0 ? '#854d0e' : '#991b1b';
+  }
   el.innerHTML = `
     <div class="stat"><label>Total responses</label><div class="val">${records.length}</div><div class="sub">all time</div></div>
     <div class="stat"><label>Customer accounts</label><div class="val">${accounts.length}</div><div class="sub">unique</div></div>
     <div class="stat"><label>Overall avg score</label><div class="val">${overallAvg}</div><div class="sub">out of 5</div></div>
     <div class="stat"><label>Avg CX score</label><div class="val">${avgCx}</div><div class="sub">customer experience</div></div>
+    <div class="stat"><label>NPS</label><div class="val" id="stat-nps" style="color:${npsColor}">${npsDisplay}</div><div class="sub">net promoter</div></div>
     <div class="stat"><label>Latest submission</label><div class="val" style="font-size:15px;">${fmtDate(latest.submitted_at)}</div><div class="sub">${latest.customer_account || latest.customer || '—'}</div></div>
   `;
 }
@@ -288,6 +290,7 @@ function renderTable() {
         <td>${pill(r.exec_quality_score)}</td>
         <td>${pill(r.exec_comms_score)}</td>
         <td>${pill(r.exec_cx_score)}</td>
+        <td style="font-weight:700;color:${r.nps_score!==undefined&&r.nps_score!==''?(parseInt(r.nps_score)>=9?'#166534':parseInt(r.nps_score)>=7?'#854d0e':'#991b1b'):'#ccc'}">${r.nps_score!==undefined&&r.nps_score!==''?r.nps_score+'/10':'—'}</td>
         <td><button class="expand-btn" onclick="deleteRecord('${r.id}')" title="Delete" style="color:#dc2626;">&#10005;</button></td>
       </tr>
       ${isExpanded ? `<tr class="detail-row"><td colspan="12">${buildDetailRow(r)}</td></tr>` : ''}
