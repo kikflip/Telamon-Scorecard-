@@ -98,25 +98,7 @@ tr:hover td{background:#fafbfc;}
   </div>
   <div class="topbar-right">
     <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
-    <button class="btn" style="background:#34D399;color:#064E3B;font-weight:700;" onclick="(function(){
-  var data=localStorage.getItem('telamon_scorecards')||'[]';
-  var records;try{records=JSON.parse(data);}catch(e){records=[];}
-  if(!records.length){alert('No scorecard records found.');return;}
-  var ex=document.getElementById('json-export-box');
-  if(ex){ex.remove();return;}
-  var ov=document.createElement('div');
-  ov.id='json-export-box';
-  ov.style='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
-  var bx=document.createElement('div');
-  bx.style='background:#fff;border-radius:12px;padding:24px;width:100%;max-width:620px;';
-  bx.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><strong style="font-size:15px;color:#1a2e4a">Copy JSON for Portal ('+(records.length)+' records)</strong><button onclick="document.getElementById(\'json-export-box\').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999">&times;</button></div><p style="font-size:12px;color:#7c82a0;margin-bottom:10px">Click <b>Select All + Copy</b>, then paste into the portal Scorecard Sync tab.</p><textarea id="jet" style="width:100%;height:150px;padding:10px;font-family:monospace;font-size:11px;border:1px solid #dde1ea;border-radius:8px;resize:none;" readonly></textarea><div style="display:flex;gap:10px;margin-top:14px"><button onclick="var t=document.getElementById(\'jet\');t.select();t.setSelectionRange(0,99999);try{navigator.clipboard.writeText(t.value).then(function(){var b=document.getElementById(\'jcb\');b.textContent=\'✓ Copied! Paste in portal\';b.style.background=\'#059669\';setTimeout(function(){b.textContent=\'Select All + Copy\';b.style.background=\'#1a2e4a\'},3000)}).catch(function(){document.execCommand(\'copy\')})}catch(e){document.execCommand(\'copy\')}" id="jcb" style="background:#1a2e4a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Select All + Copy</button><button onclick="document.getElementById(\'json-export-box\').remove()" style="background:#f0f1f6;color:#1a2e4a;border:none;border-radius:8px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:inherit">Close</button></div>';
-  ov.appendChild(bx);
-  document.body.appendChild(ov);
-  var ta=document.getElementById('jet');
-  ta.value=data;
-  setTimeout(function(){ta.focus();ta.select();},50);
-  ov.onclick=function(e){if(e.target===ov)ov.remove();};
-})()">Copy JSON for Portal</button>
+    <button class="btn" style="background:#34D399;color:#064E3B;font-weight:700;" onclick="copyJSON()">Copy JSON for Portal</button>
     <button class="btn" onclick="document.getElementById('import-section').style.display=document.getElementById('import-section').style.display==='none'?'block':'none'">Import JSON</button>
     <button class="btn danger" onclick="confirmClear()">Clear all</button>
   </div>
@@ -139,7 +121,7 @@ tr:hover td{background:#fafbfc;}
     <input type="text" id="search" placeholder="Search by customer, project, PM..." oninput="renderTable()">
     <select id="filter-account" onchange="renderTable()"><option value="">All accounts</option></select>
     <select id="filter-type" onchange="renderTable()"><option value="">All project types</option></select>
-      <select id="filter-pm" onchange="renderTable()"><option value="">All PMs</option></select>
+    <select id="filter-pm" onchange="renderTable()"><option value="">All PMs</option></select>
     <select id="sort-by" onchange="renderTable()">
       <option value="date-desc">Newest first</option>
       <option value="date-asc">Oldest first</option>
@@ -155,84 +137,6 @@ tr:hover td{background:#fafbfc;}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-function copyJSON() {
-  const data = localStorage.getItem('telamon_scorecards') || '[]';
-  let records;
-  try { records = JSON.parse(data); } catch(e) { records = []; }
-  if (!records.length) {
-    alert('No scorecard records found. Make sure you have submitted scorecards.');
-    return;
-  }
-
-  // Remove existing popup if open
-  const existing = document.getElementById('json-export-box');
-  if (existing) { existing.remove(); return; }
-
-  // Build popup
-  const overlay = document.createElement('div');
-  overlay.id = 'json-export-box';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
-
-  const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;width:100%;max-width:620px;box-shadow:0 20px 60px rgba(0,0,0,.3);';
-  box.innerHTML =
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-      '<strong style="font-size:15px;color:#1a2e4a;">Copy JSON for Portal (' + records.length + ' records)</strong>' +
-      '<button id="json-close-btn" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;line-height:1;">&times;</button>' +
-    '</div>' +
-    '<p style="font-size:12px;color:#7c82a0;margin-bottom:10px;">Click <strong>Select All + Copy</strong> below, then paste into the portal Scorecard Sync tab.</p>' +
-    '<textarea id="json-export-text" style="width:100%;height:150px;padding:10px;font-family:monospace;font-size:11px;border:1px solid #dde1ea;border-radius:8px;resize:none;color:#1a2e4a;" readonly></textarea>' +
-    '<div style="display:flex;gap:10px;margin-top:14px;">' +
-      '<button id="json-copy-btn" style="background:#1a2e4a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Select All + Copy</button>' +
-      '<button id="json-close-btn2" style="background:#f0f1f6;color:#1a2e4a;border:none;border-radius:8px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:inherit;">Close</button>' +
-    '</div>';
-
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-
-  // Set textarea value via JS (avoids template literal issues with special chars)
-  const ta = document.getElementById('json-export-text');
-  ta.value = data;
-
-  // Auto-select
-  setTimeout(() => { ta.focus(); ta.select(); }, 50);
-
-  // Close buttons
-  document.getElementById('json-close-btn').onclick  = () => overlay.remove();
-  document.getElementById('json-close-btn2').onclick = () => overlay.remove();
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-
-  // Copy button
-  document.getElementById('json-copy-btn').onclick = function() {
-    ta.select();
-    ta.setSelectionRange(0, 99999);
-    const btn = this;
-    const tryClipboard = () => {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(ta.value).then(() => {
-          btn.textContent = '✓ Copied! Now paste in portal';
-          btn.style.background = '#059669';
-          setTimeout(() => { btn.textContent = 'Select All + Copy'; btn.style.background = '#1a2e4a'; }, 3000);
-        }).catch(fallback);
-      } else {
-        fallback();
-      }
-    };
-    const fallback = () => {
-      try {
-        document.execCommand('copy');
-        btn.textContent = '✓ Copied! Now paste in portal';
-        btn.style.background = '#059669';
-        setTimeout(() => { btn.textContent = 'Select All + Copy'; btn.style.background = '#1a2e4a'; }, 3000);
-      } catch(e) {
-        btn.textContent = 'Use Ctrl+A then Ctrl+C on the text above';
-        btn.style.background = '#854d0e';
-      }
-    };
-    tryClipboard();
-  };
-}
-
 const DB_KEY = 'telamon_scorecards';
 
 function getRecords() {
@@ -284,7 +188,7 @@ function renderSummary(records) {
   const latest = records.slice().sort((a,b) => b.submitted_at.localeCompare(a.submitted_at))[0];
   const cxScores = records.map(r => parseInt(r.exec_cx_score)).filter(v => v > 0);
   const avgCx = cxScores.length ? (cxScores.reduce((a,b)=>a+b,0)/cxScores.length).toFixed(1) : '—';
-  // Customer average scores
+
   const custMap = {};
   records.forEach(r => {
     const cust = r.customer_account || r.customer || 'Unknown';
@@ -295,25 +199,6 @@ function renderSummary(records) {
   const custAvgs = Object.entries(custMap)
     .map(([name, scores]) => ({ name, avg: (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1), count: scores.length }))
     .sort((a,b) => b.avg - a.avg);
-  const custRows = custAvgs.map(c =>
-    `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee;font-size:12px">
-      <span style="font-weight:600">${c.name}</span>
-      <span style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:#7c82a0">${c.count} project${c.count>1?'s':''}</span>
-        <span style="font-weight:700;color:${c.avg>=4?'#166534':c.avg>=3?'#854d0e':'#991b1b'};min-width:28px;text-align:right">${c.avg}</span>
-      </span>
-    </div>`
-  ).join('');
-
-  el.innerHTML = `
-    <div class="stat"><label>Total responses</label><div class="val">${records.length}</div><div class="sub">all time</div></div>
-    <div class="stat"><label>Customer accounts</label><div class="val">${accounts.length}</div><div class="sub">unique</div></div>
-    <div class="stat"><label>Overall avg score</label><div class="val">${overallAvg}</div><div class="sub">out of 5</div></div>
-    <div class="stat"><label>Avg CX score</label><div class="val">${avgCx}</div><div class="sub">customer experience</div></div>
-    <div class="stat"><label>Latest submission</label><div class="val" style="font-size:15px;">${fmtDate(latest.submitted_at)}</div><div class="sub">${latest.customer_account || latest.customer || '—'}</div></div>
-  `;
-
-  // Customer avg score breakdown (rendered below summary bar)
   let custEl = document.getElementById('customer-avg-row');
   if (!custEl) {
     custEl = document.createElement('div');
@@ -321,10 +206,15 @@ function renderSummary(records) {
     custEl.style.cssText = 'background:#f8f9fc;border:1px solid #dde1ea;border-radius:10px;padding:14px 18px;margin-bottom:16px';
     el.parentNode.insertBefore(custEl, el.nextSibling);
   }
-  custEl.innerHTML = custAvgs.length ? \`
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#7c82a0;margin-bottom:10px">Average Score by Customer</div>
-    \${custRows}
-  \` : '';
+  custEl.innerHTML = custAvgs.length ? '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#7c82a0;margin-bottom:10px">Average Score by Customer</div>' + custAvgs.map(c => '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee;font-size:12px"><span style="font-weight:600">' + c.name + '</span><span style="font-weight:700;color:' + (c.avg>=4?'#166534':c.avg>=3?'#854d0e':'#991b1b') + '">' + c.avg + '</span></div>').join('') : '';
+
+  el.innerHTML = \`
+    <div class="stat"><label>Total responses</label><div class="val">${records.length}</div><div class="sub">all time</div></div>
+    <div class="stat"><label>Customer accounts</label><div class="val">${accounts.length}</div><div class="sub">unique</div></div>
+    <div class="stat"><label>Overall avg score</label><div class="val">${overallAvg}</div><div class="sub">out of 5</div></div>
+    <div class="stat"><label>Avg CX score</label><div class="val">${avgCx}</div><div class="sub">customer experience</div></div>
+    <div class="stat"><label>Latest submission</label><div class="val" style="font-size:15px;">${fmtDate(latest.submitted_at)}</div><div class="sub">${latest.customer_account || latest.customer || '—'}</div></div>
+  `;
 }
 
 function populateFilters(records) {
@@ -334,8 +224,8 @@ function populateFilters(records) {
   const types = [...new Set(records.map(r => r.project_type).filter(Boolean))].sort();
   const pmEl = document.getElementById('filter-pm');
   const pms = [...new Set(records.map(r => r.pm).filter(Boolean))].sort();
-  const selPm = pmEl.value;
-  pmEl.innerHTML = '<option value="">All PMs</option>' + pms.map(p => `<option value="${p}" ${p===selPm?'selected':''}>${p}</option>`).join('');
+  const selPm = pmEl ? pmEl.value : '';
+  if (pmEl) pmEl.innerHTML = '<option value="">All PMs</option>' + pms.map(p => `<option value="${p}" ${p===selPm?'selected':''}>${p}</option>`).join('');
   const selAcc = accEl.value, selType = typeEl.value;
   accEl.innerHTML = '<option value="">All accounts</option>' + accounts.map(a => `<option${a===selAcc?' selected':''}>${a}</option>`).join('');
   typeEl.innerHTML = '<option value="">All project types</option>' + types.map(t => `<option${t===selType?' selected':''}>${t}</option>`).join('');
@@ -351,11 +241,11 @@ function filterRecords(records) {
   let filtered = records.filter(r => {
     if (account && r.customer_account !== account) return false;
     if (type && r.project_type !== type) return false;
+    if (pmFilter && (r.pm || '') !== pmFilter) return false;
     if (search) {
       const hay = [r.customer_account,r.customer,r.project_name,r.pm,r.project_type,r.submitter_name].join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
-    if (pmFilter && (r.pm || '') !== pmFilter) return false;
     return true;
   });
 
@@ -469,7 +359,6 @@ function buildDetailRow(r) {
       <div class="drow"><span>Title</span><strong>${r.submitter_title||'—'}</strong></div>
       ${r.customer_quote ? `<div style="margin-top:10px;"><div class="quote-block">"${r.customer_quote}"</div>${r.submitter_name?`<div class="quote-attr">— ${r.submitter_name}${r.submitter_title?', '+r.submitter_title:''}</div>`:''}</div>` : ''}
     </div>
-    
     <div class="detail-group">
       <h4>Written feedback</h4>
       ${r.schedule_internal ? `<div class="drow"><span>Schedule (internal)</span><strong style="max-width:160px;text-align:right;font-weight:400;">${r.schedule_internal}</strong></div>` : ''}
@@ -610,6 +499,36 @@ function importJSON() {
   } catch(e) {
     alert('Invalid JSON. Please check the format and try again.');
   }
+}
+
+
+function copyJSON() {
+  var data = localStorage.getItem('telamon_scorecards') || '[]';
+  var records;
+  try { records = JSON.parse(data); } catch(e) { records = []; }
+  if (!records.length) { alert('No scorecard records found.'); return; }
+  var existing = document.getElementById('json-export-box');
+  if (existing) { existing.remove(); return; }
+  var overlay = document.createElement('div');
+  overlay.id = 'json-export-box';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;width:100%;max-width:620px';
+  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><strong style="font-size:15px;color:#1a2e4a">Copy JSON for Portal (' + records.length + ' records)</strong><button onclick="document.getElementById('json-export-box').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999">&times;</button></div><p style="font-size:12px;color:#7c82a0;margin-bottom:10px">Click Select All then Ctrl+C to copy, then paste into the portal.</p><textarea id="jet" style="width:100%;height:150px;padding:10px;font-family:monospace;font-size:11px;border:1px solid #dde1ea;border-radius:8px;resize:none" readonly></textarea><div style="display:flex;gap:10px;margin-top:14px"><button id="jcb" style="background:#1a2e4a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">Select All</button><button onclick="document.getElementById('json-export-box').remove()" style="background:#f0f1f6;color:#1a2e4a;border:none;border-radius:8px;padding:10px 20px;font-size:13px;cursor:pointer">Close</button></div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  document.getElementById('jet').value = data;
+  document.getElementById('jet').focus();
+  document.getElementById('jet').select();
+  document.getElementById('jcb').onclick = function() {
+    var ta = document.getElementById('jet');
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    this.textContent = 'Copied! Now paste in portal';
+    this.style.background = '#059669';
+  };
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
 }
 
 renderTable();
