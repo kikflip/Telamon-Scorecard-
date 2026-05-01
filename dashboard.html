@@ -530,50 +530,80 @@ renderTable();
 
 function copyJSON() {
   const data = localStorage.getItem('telamon_scorecards') || '[]';
-  const records = JSON.parse(data);
+  let records;
+  try { records = JSON.parse(data); } catch(e) { records = []; }
   if (!records.length) {
-    alert('No scorecard records found. Submit some scorecards first.');
+    alert('No scorecard records found. Make sure you have submitted scorecards.');
     return;
   }
 
-  // Show or hide the export box
-  let box = document.getElementById('json-export-box');
-  if (box) { box.remove(); return; }
+  // Remove existing popup if open
+  const existing = document.getElementById('json-export-box');
+  if (existing) { existing.remove(); return; }
 
-  box = document.createElement('div');
-  box.id = 'json-export-box';
-  box.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
-  box.innerHTML = `
-    <div style="background:#fff;border-radius:12px;padding:24px;width:100%;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <strong style="font-size:15px;color:#1a2e4a;">Export JSON for Portal</strong>
-        <button onclick="document.getElementById('json-export-box').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1;">&times;</button>
-      </div>
-      <p style="font-size:12px;color:#7c82a0;margin-bottom:10px;">Select all the text below (Ctrl+A), then copy it (Ctrl+C), then paste into the portal Scorecard Sync tab.</p>
-      <textarea id="json-export-text" style="width:100%;height:160px;padding:10px;font-family:monospace;font-size:11px;border:1px solid #dde1ea;border-radius:8px;resize:none;color:#1a2e4a;" readonly>${data}</textarea>
-      <div style="display:flex;gap:10px;margin-top:14px;">
-        <button onclick="
-          const ta = document.getElementById('json-export-text');
-          ta.select();
-          ta.setSelectionRange(0, 99999);
-          try {
-            navigator.clipboard.writeText(ta.value).then(() => {
-              this.textContent = '✓ Copied!';
-              this.style.background = '#059669';
-              setTimeout(() => { this.textContent = 'Copy All'; this.style.background = '#1a2e4a'; }, 2000);
-            }).catch(() => { document.execCommand('copy'); this.textContent = '✓ Copied!'; setTimeout(() => { this.textContent = 'Copy All'; }, 2000); });
-          } catch(e) { document.execCommand('copy'); }
-        " style="background:#1a2e4a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Copy All</button>
-        <button onclick="document.getElementById('json-export-box').remove()" style="background:#f0f1f6;color:#1a2e4a;border:none;border-radius:8px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:inherit;">Close</button>
-      </div>
-    </div>`;
-  document.body.appendChild(box);
-  // Auto-select the text
-  setTimeout(() => {
-    const ta = document.getElementById('json-export-text');
-    ta.focus();
+  // Build popup
+  const overlay = document.createElement('div');
+  overlay.id = 'json-export-box';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;width:100%;max-width:620px;box-shadow:0 20px 60px rgba(0,0,0,.3);';
+  box.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<strong style="font-size:15px;color:#1a2e4a;">Copy JSON for Portal (' + records.length + ' records)</strong>' +
+      '<button id="json-close-btn" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;line-height:1;">&times;</button>' +
+    '</div>' +
+    '<p style="font-size:12px;color:#7c82a0;margin-bottom:10px;">Click <strong>Select All + Copy</strong> below, then paste into the portal Scorecard Sync tab.</p>' +
+    '<textarea id="json-export-text" style="width:100%;height:150px;padding:10px;font-family:monospace;font-size:11px;border:1px solid #dde1ea;border-radius:8px;resize:none;color:#1a2e4a;" readonly></textarea>' +
+    '<div style="display:flex;gap:10px;margin-top:14px;">' +
+      '<button id="json-copy-btn" style="background:#1a2e4a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Select All + Copy</button>' +
+      '<button id="json-close-btn2" style="background:#f0f1f6;color:#1a2e4a;border:none;border-radius:8px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:inherit;">Close</button>' +
+    '</div>';
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  // Set textarea value via JS (avoids template literal issues with special chars)
+  const ta = document.getElementById('json-export-text');
+  ta.value = data;
+
+  // Auto-select
+  setTimeout(() => { ta.focus(); ta.select(); }, 50);
+
+  // Close buttons
+  document.getElementById('json-close-btn').onclick  = () => overlay.remove();
+  document.getElementById('json-close-btn2').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  // Copy button
+  document.getElementById('json-copy-btn').onclick = function() {
     ta.select();
-  }, 50);
+    ta.setSelectionRange(0, 99999);
+    const btn = this;
+    const tryClipboard = () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(ta.value).then(() => {
+          btn.textContent = '✓ Copied! Now paste in portal';
+          btn.style.background = '#059669';
+          setTimeout(() => { btn.textContent = 'Select All + Copy'; btn.style.background = '#1a2e4a'; }, 3000);
+        }).catch(fallback);
+      } else {
+        fallback();
+      }
+    };
+    const fallback = () => {
+      try {
+        document.execCommand('copy');
+        btn.textContent = '✓ Copied! Now paste in portal';
+        btn.style.background = '#059669';
+        setTimeout(() => { btn.textContent = 'Select All + Copy'; btn.style.background = '#1a2e4a'; }, 3000);
+      } catch(e) {
+        btn.textContent = 'Use Ctrl+A then Ctrl+C on the text above';
+        btn.style.background = '#854d0e';
+      }
+    };
+    tryClipboard();
+  };
 }
 </script>
 </body>
