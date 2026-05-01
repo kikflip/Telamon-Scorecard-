@@ -373,17 +373,7 @@ function buildDetailRow(r) {
       <div class="drow"><span>Title</span><strong>${r.submitter_title||'—'}</strong></div>
       ${r.customer_quote ? `<div style="margin-top:10px;"><div class="quote-block">"${r.customer_quote}"</div>${r.submitter_name?`<div class="quote-attr">— ${r.submitter_name}${r.submitter_title?', '+r.submitter_title:''}</div>`:''}</div>` : ''}
     </div>
-    <div class="detail-group">
-      <h4>NPS Score</h4>
-      \${r.nps_score !== undefined && r.nps_score !== '' ? \`
-      <div style="display:flex;align-items:center;gap:14px;padding:6px 0">
-        <div style="font-size:28px;font-weight:700;color:\${parseInt(r.nps_score)>=9?'#166534':parseInt(r.nps_score)>=7?'#854d0e':'#991b1b'}">\${r.nps_score}<span style="font-size:13px;color:#aaa">/10</span></div>
-        <div>
-          <div style="font-weight:600;font-size:13px">\${parseInt(r.nps_score)>=9?'&#128514; Promoter':parseInt(r.nps_score)>=7?'&#128528; Passive':'&#128542; Detractor'}</div>
-          \${r.nps_comment ? \`<div style="font-size:12px;color:#7c82a0;margin-top:3px">\${r.nps_comment}</div>\` : ''}
-        </div>
-      </div>\` : '<div style="color:#aaa;font-size:12px">Not submitted</div>'}
-    </div>
+    
     <div class="detail-group">
       <h4>Written feedback</h4>
       ${r.schedule_internal ? `<div class="drow"><span>Schedule (internal)</span><strong style="max-width:160px;text-align:right;font-weight:400;">${r.schedule_internal}</strong></div>` : ''}
